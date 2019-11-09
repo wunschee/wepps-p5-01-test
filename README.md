@@ -4,8 +4,7 @@
 
 Javascript clone of Battle Ship
 
-- MongoDB remote server connected with Mongoose
-- OpenUI5 resources (./resources/1.70.0/resources/sap-ui-core.js) and node_modules are not included in repository
+- 8-connected pixels are neighbors to every pixel that touches one of their edges or corners. These pixels are connected horizontally, vertically, and diagonally. In addition to 4-connected pixels, each pixel with coordinates (x±1, y±1) is connected to the pixel at (x, y). Source: https://en.wikipedia.org/wiki/Pixel_connectivity
 
 ## Sections
 
