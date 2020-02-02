@@ -1,10 +1,17 @@
 let table;
 let ships = [];
-let button;
+let buttonGenerate;
+let inputFire;
 
 let boardSize = 10;
-let numShips = 5;
-let shipLength = 3;
+let numShips5 = 1;
+let shipLength5 = 5;
+let numShips4 = 2;
+let shipLength4 = 4;
+let numShips3 = 3;
+let shipLength3 = 3;
+
+let guesses = 0;
 let shipsSunk = 0;
 
 // happens only once
@@ -12,9 +19,14 @@ function setup() {
     createCanvas(440, 440);
     table = new Table(boardSize, boardSize);
 
-    button = createButton('Generate '+numShips+' ships with length '+shipLength);
-    button.position(0, 0);
-    button.mousePressed(generateRandomSet);
+    let totalNumShips = numShips5+numShips4+numShips3;
+    buttonGenerate = createButton('Generate '+totalNumShips+' ships with length '+shipLength5+','+shipLength4+','+shipLength3);
+    buttonGenerate.position(0, 0);
+    buttonGenerate.mousePressed(generateRandomSet);
+
+    inputFire = createInput('');
+    inputFire.position(0, 430);
+    inputFire.size(20, AUTO);
 }
 
 // continous loop
@@ -30,17 +42,47 @@ function draw() {
     }
 }
 
+function keyPressed() {
+    if (keyCode === ENTER) {
+        processGuess(inputFire.value().toUpperCase());
+    }
+}
+
 function generateRandomSet() {
     let locations;
 
-    for (i = ships.length-1; i >= 0; i--) {
-        ships.slice(i, 1);
+    for (let i = ships.length-1; i >= 0; i--) {
+        ships.splice(i, 1);
     }
 
-    for (let i = 0; i < numShips; i++) {
-        ships.push(new Ship(shipLength));
+    guesses = 0;
+    shipsSunk = 0;
+    inputFire.value('');
+
+    for (let i = 0; i < numShips5; i++) {
+        ships.push(new Ship(shipLength5));
         do {
-            locations = generateShip();
+            locations = generateShip(shipLength5);
+        }
+        while (collision(locations));
+        ships[i].locations = locations;
+        // console.log('ship:'+i+' locations:'+locations);
+    }
+
+    for (let i = numShips5; i < numShips5+numShips4; i++) {
+        ships.push(new Ship(shipLength4));
+        do {
+            locations = generateShip(shipLength4);
+        }
+        while (collision(locations));
+        ships[i].locations = locations;
+        // console.log('ship:'+i+' locations:'+locations);
+    }
+
+    for (let i = numShips5+numShips4; i < numShips5+numShips4+numShips3; i++) {
+        ships.push(new Ship(shipLength3));
+        do {
+            locations = generateShip(shipLength3);
         }
         while (collision(locations));
         ships[i].locations = locations;
@@ -48,7 +90,7 @@ function generateRandomSet() {
     }
 }
 
-this.generateShip = function() {
+function generateShip(shipLength) {
     let direction = Math.floor(Math.random() * 2);
     let row, col;
 
@@ -64,18 +106,19 @@ this.generateShip = function() {
 
     for (i = 0; i < shipLength; i++) {
         if (direction === 1) {
-            newShipLocations.push((col + i) + "" + row);
+            newShipLocations.push((col + i) + '' + row);
         } else {
-            newShipLocations.push(col + "" + (row + i));
+            newShipLocations.push(col + '' + (row + i));
         }
     }
     return newShipLocations;
 }
 
-this.collision = function(locations) {
+function collision(locations) {
     let neighbours = [];
     let maxCnt = boardSize*boardSize;
-    for (i = 0; i < numShips; i++) {
+    let totalNumShips = numShips5+numShips4+numShips3;
+    for (i = 0; i < totalNumShips; i++) {
         let ship = ships[i];
         if (ship != undefined) {
             for (j = 0; j < locations.length; j++) {
@@ -132,4 +175,72 @@ this.collision = function(locations) {
         }
     }
     return false;
+}
+
+function processGuess(guess) {
+    let location = parseGuess(guess);
+
+    if (location) {
+        guesses++;
+        let hit = fire(location);
+        let totalNumShips = numShips5+numShips4+numShips3;
+        if (hit && shipsSunk === totalNumShips) {
+            console.log('You sank all my battleships, in ' + guesses + ' guesses');
+        }
+    }
+}
+
+// helper function to parse a guess from the user
+function parseGuess(guess) {
+	let alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+
+	if (guess === null || guess.length !== 2) {
+		alert('Oops, please enter a letter and a number on the board.');
+	} else {
+		let firstChar = guess.charAt(0);
+		let row = alphabet.indexOf(firstChar);
+		let column = guess.charAt(1);
+		if (isNaN(row) || isNaN(column)) {
+			alert('Oops, that is not on the board.');
+		} else if (row < 0 || row >= boardSize || column < 0 || column >= boardSize) {
+				alert('Oops, that is off the board!');
+		} else {
+			return row + column;
+		}
+	}
+	return null;
+}
+
+function fire(guess) {
+    let totalNumShips = numShips5+numShips4+numShips3;
+    for(let i = 0; i < totalNumShips; i++) {
+        let ship = ships[i];
+        let index = ship.locations.indexOf(guess);
+
+        // check if a ship location has already been hit
+        if (ship.hits[index] === 'hit') {
+            console.log('Oops, you already hit that location');
+            return true;
+        } else if (index >= 0) {
+            ship.hits[index] = 'hit';
+            console.log('HIT!');
+
+            if (isSunk(ship)) {
+                console.log('You sank my battleship!');
+                shipsSunk++;
+            }
+            return true;
+        }
+    }
+    console.log('You Missed');
+    return false;
+}
+
+function isSunk(ship) {
+    for (let i = 0; i < ship.locations.length; i++) {
+        if (ship.hits[i] !== 'hit') {
+            return false;
+        }
+    }
+    return true;
 }
